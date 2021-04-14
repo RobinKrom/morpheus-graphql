@@ -21,8 +21,8 @@ module Data.Morpheus.Subscriptions
   )
 where
 
-import Control.Monad.IO.Unlift
-  ( MonadUnliftIO,
+import Control.Monad.Trans.Control
+  ( MonadBaseControl,
   )
 import Data.Morpheus.App
   ( App,
@@ -63,7 +63,7 @@ httpPubApp = runPubApp
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 webSocketsApp ::
-  ( MonadUnliftIO m,
+  ( MonadBaseControl IO m,
     MonadIO m,
     SubApp ServerApp e
   ) =>
@@ -72,7 +72,7 @@ webSocketsApp ::
 webSocketsApp = runSubApp
 
 class SubApp app e where
-  runSubApp :: (MonadIO m, MonadUnliftIO m) => App e m -> m (app, e -> m ())
+  runSubApp :: (MonadIO m, MonadBaseControl IO m) => App e m -> m (app, e -> m ())
 
 class PubApp e where
   runPubApp :: (MonadIO m, MapAPI a b) => [e -> m ()] -> App e m -> a -> m b

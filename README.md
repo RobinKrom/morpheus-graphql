@@ -1,3 +1,7 @@
+# Fork of Morpheus GraphQL
+This fork uses the `MonadBaseControl IO` constraint instead of `MonadUnliftIO`. This makes it work
+for example with the `Snap` web-framework.
+
 # Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) ![CI](https://github.com/morpheusgraphql/morpheus-graphql/workflows/CI/badge.svg)
 
 Build GraphQL APIs with your favorite functional language!

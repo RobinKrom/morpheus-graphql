@@ -38,10 +38,9 @@ where
 import Control.Concurrent
   ( modifyMVar_,
   )
-import Control.Exception (finally)
-import Control.Monad.IO.Unlift
-  ( MonadUnliftIO,
-    withRunInIO,
+import Control.Exception.Lifted (finally)
+import Control.Monad.Trans.Control
+  ( MonadBaseControl,
   )
 -- MORPHEUS
 
@@ -124,11 +123,9 @@ initDefaultStore = do
         writeStore = \changes -> liftIO $ modifyMVar_ store (return . changes)
       }
 
-finallyM :: MonadUnliftIO m => m () -> m () -> m ()
-finallyM loop end = withRunInIO $ \runIO -> finally (runIO loop) (runIO end)
-
 connectionThread ::
-  ( MonadUnliftIO m,
+  ( MonadBaseControl IO m,
+    MonadIO m,
     Eq ch,
     Hashable ch
   ) =>
@@ -137,7 +134,7 @@ connectionThread ::
   m ()
 connectionThread api scope = do
   input <- connect
-  finallyM
+  finally
     (connectionLoop api scope input)
     (disconnect scope input)
 

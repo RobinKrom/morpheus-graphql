@@ -15,9 +15,9 @@ module Data.Morpheus.Subscriptions.WebSockets
   )
 where
 
-import Control.Monad.IO.Unlift
-  ( MonadUnliftIO,
-    withRunInIO,
+import Control.Monad.Trans.Control
+  ( MonadBaseControl,
+    embed_
   )
 import Data.Morpheus.Subscriptions.Internal
   ( ApiContext (..),
@@ -34,15 +34,6 @@ import Network.WebSockets
 import qualified Network.WebSockets as WS
 import Relude
 
--- support old version of Websockets
-pingThread :: Connection -> IO () -> IO ()
-
-#if MIN_VERSION_websockets(0,12,6)
-pingThread connection = WS.withPingThread connection 30 (return ())
-#else
-pingThread connection = (WS.forkPingThread connection 30 >>)
-#endif
-
 defaultWSScope :: MonadIO m => Store e m -> Connection -> ApiContext SUB e m
 defaultWSScope Store {writeStore} connection =
   SubContext
@@ -52,16 +43,12 @@ defaultWSScope Store {writeStore} connection =
     }
 
 webSocketsWrapper ::
-  (MonadUnliftIO m, MonadIO m) =>
+  (MonadBaseControl IO m, MonadIO m) =>
   Store e m ->
   (ApiContext SUB e m -> m ()) ->
   m ServerApp
 webSocketsWrapper store handler =
-  withRunInIO $
-    \runIO ->
-      pure $
-        \pending -> do
-          conn <- acceptApolloRequest pending
-          pingThread
-            conn
-            $ runIO (handler (defaultWSScope store conn))
+  embed_ $
+    \pending -> do
+      conn <- liftIO $ acceptApolloRequest pending
+      handler (defaultWSScope store conn)
